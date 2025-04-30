@@ -1,0 +1,3 @@
+interface PlayerControlProps {
+    speed: number;
+};

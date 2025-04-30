@@ -7,8 +7,14 @@ interface PlaneProps {
 
 interface OpenBoxProps
 {
-    color: string;
+    floorColor: string;
+    wallColor: string;
+    ceilingColor: string;
     position: [number, number, number];
     rotation?: [number, number, number];
     size?: [number, number, number];
+};
+
+interface OpenBoxRef {
+    walls: THREE.Mesh[];
 };
