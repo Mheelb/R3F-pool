@@ -26,12 +26,12 @@ export const CharacterController = () => {
     const cameraLookAtWorldPosition = useRef<THREE.Vector3>(new THREE.Vector3());
     const cameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
 
-    const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, JUMP_SPEED } = useControls("CHARACTER CONTROL", {
-        WALK_SPEED: { value: 0.8, min: 0.1, max: 4, step: 0.1 },
-        RUN_SPEED: { value: 1.6, min: 0.2, max: 8, step: 0.1 },
-        ROTATION_SPEED: { value: degToRad(0.5), min: degToRad(0.01), max: degToRad(5), step: degToRad(0.1) },
-        JUMP_SPEED: { value: 3, min: 0.1, max: 4, step: 0.1 },
-    });
+    const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, JUMP_SPEED } = {
+        WALK_SPEED: 0.8,
+        RUN_SPEED: 1.6,
+        ROTATION_SPEED: degToRad(0.5),
+        JUMP_SPEED: 3,
+    }
 
     const [, get] = useKeyboardControls();
 
