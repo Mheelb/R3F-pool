@@ -16,7 +16,10 @@ export const SpotLight = ({ intensity, color, position, helper = false, decay, p
         distance={distance}
         intensity={intensity}
         color={color}
-        castShadow={true}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-bias={-0.0001}
       />
   )
 };

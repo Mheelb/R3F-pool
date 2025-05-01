@@ -2,7 +2,7 @@ import { RigidBody } from '@react-three/rapier';
 
 const Plane = ({ position, size, color, rotation }: PlaneProps) => {
     return (
-        <mesh position={position} rotation={rotation}>
+        <mesh position={position} rotation={rotation} receiveShadow>
             <boxGeometry args={[size[0], size[1], 0.1]} />
             <meshStandardMaterial color={color} />
         </mesh>

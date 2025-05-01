@@ -22,14 +22,14 @@ const App = () => {
 
   return (
     <KeyboardControls map={keyboardMap}>
-    <Canvas style={{touchAction: "none"}}>
+    <Canvas style={{touchAction: "none"}} shadows>
       <ambientLight intensity={0.5} />
       <SpotLight
         position={[0, 5, 0]}
-        intensity={10}
+        intensity={50}
         color="white"
         angle={1}
-        penumbra={0.5}
+        penumbra={2}
       />
       <Physics key={map}>
         <CharacterController />
