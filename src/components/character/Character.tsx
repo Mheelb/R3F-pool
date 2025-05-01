@@ -1,5 +1,5 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -10,194 +10,232 @@ interface CharacterProps {
 
 export const Character = forwardRef<THREE.Group, CharacterProps>(
   ({ animation: initialAnimation, ...props }, ref) => {
-  const group = useRef<THREE.Group>(null);
-  // État de l'animation courante
-  const [currentAnimation, setCurrentAnimation] = useState(initialAnimation);
-  // État pour suivre si le personnage est en train de bouger
-  const [isMoving, setIsMoving] = useState(false);
+    const group = useRef<THREE.Group>(null);
+    // État de l'animation courante
+    const [currentAnimation, setCurrentAnimation] = useState(initialAnimation);
+    // État pour suivre si le personnage est en train de bouger
+    const [isMoving, setIsMoving] = useState(false);
+    // État pour le saut
+    const [isJumping, setIsJumping] = useState(false);
 
-  useEffect(() => {
-    if (typeof ref === 'function') {
-      ref(group.current);
-    } else if (ref) {
-      ref.current = group.current;
-    }
-  }, [ref]);
+    useEffect(() => {
+      if (typeof ref === 'function') {
+        ref(group.current);
+      } else if (ref) {
+        ref.current = group.current;
+      }
+    }, [ref]);
 
-  const { nodes, materials, animations } = useGLTF("/models/character.glb") as unknown as {
-    nodes: {
-      _rootJoint: THREE.Bone;
-      body: THREE.SkinnedMesh;
-      eye: THREE.SkinnedMesh;
-      "hand-": THREE.SkinnedMesh;
-      leg: THREE.SkinnedMesh;
+    const { nodes, materials, animations } = useGLTF("/models/character.glb") as unknown as {
+      nodes: {
+        _rootJoint: THREE.Bone;
+        body: THREE.SkinnedMesh;
+        eye: THREE.SkinnedMesh;
+        "hand-": THREE.SkinnedMesh;
+        leg: THREE.SkinnedMesh;
+      };
+      materials: { [key: string]: THREE.Material };
+      animations: THREE.AnimationClip[];
     };
-    materials: { [key: string]: THREE.Material };
-    animations: THREE.AnimationClip[];
-  };
-  
-  const { actions } = useAnimations(animations, group);
-  
-  const keys = useRef({
-    z: false,
-    q: false,
-    s: false,
-    d: false
-  });
 
-  const movement = useRef({
-    speed: 2,
-    currentVelocity: new THREE.Vector3(0, 0, 0),
-    acceleration: 8,
-    deceleration: 8,
-    rotationSpeed: 5
-  });
+    const { actions } = useAnimations(animations, group);
 
-  const playAnimation = (name: string) => {
-    Object.values(actions).forEach(action => action?.stop());
-    
-    if (actions[name]) {
-      actions[name].reset().fadeIn(0.2).play();
-      setCurrentAnimation(name);
-    }
-  };
+    const keys = useRef({
+      z: false,
+      q: false,
+      s: false,
+      d: false,
+      space: false
+    });
 
-  const checkMoving = () => {
-    const moving = keys.current.z || keys.current.q || keys.current.s || keys.current.d;
-    
-    if (moving !== isMoving) {
-      setIsMoving(moving);
-      playAnimation(moving ? "run" : "idle");
-    }
-  };
+    const movement = useRef({
+      speed: 2,
+      currentVelocity: new THREE.Vector3(0, 0, 0),
+      acceleration: 8,
+      deceleration: 8,
+      rotationSpeed: 5,
+      jumpForce: 5,
+      gravity: 15,
+      isGrounded: true,
+      floorHeight: -2.5
+    });
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
-      if (key === 'z' || key === 'q' || key === 's' || key === 'd') {
-        keys.current[key] = true;
-        checkMoving();
+    const playAnimation = (name: string) => {
+      Object.values(actions).forEach(action => action?.stop());
+
+      if (actions[name]) {
+        actions[name].reset().fadeIn(0.2).play();
+        setCurrentAnimation(name);
       }
     };
 
-    const handleKeyUp = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
-      if (key === 'z' || key === 'q' || key === 's' || key === 'd') {
-        keys.current[key] = false;
-        checkMoving();
+    const checkMoving = () => {
+      const moving = keys.current.z || keys.current.q || keys.current.s || keys.current.d;
+
+      if (moving !== isMoving && !isJumping) {
+        setIsMoving(moving);
+        playAnimation(moving ? "run" : "idle");
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    const jump = () => {
+      if (movement.current.isGrounded && !isJumping) {
+        setIsJumping(true);
+        playAnimation("fall");
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+        movement.current.currentVelocity.y = movement.current.jumpForce;
+        movement.current.isGrounded = false;
+      }
     };
-  }, [isMoving]);
 
-  useEffect(() => {
-    playAnimation(initialAnimation);
-  }, []);
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        const key = event.key.toLowerCase();
+        if (key === 'z' || key === 'q' || key === 's' || key === 'd') {
+          keys.current[key] = true;
+          checkMoving();
+        } else if (key === ' ' || event.code === 'Space') {
+          keys.current.space = true;
+          jump();
+        }
+      };
 
-  useFrame((state, delta) => {
-    if (!group.current) return;
+      const handleKeyUp = (event: KeyboardEvent) => {
+        const key = event.key.toLowerCase();
+        if (key === 'z' || key === 'q' || key === 's' || key === 'd') {
+          keys.current[key] = false;
+          checkMoving();
+        } else if (key === ' ' || event.code === 'Space') {
+          keys.current.space = false;
+        }
+      };
 
-    const character = group.current;
-    const { speed, acceleration, deceleration, currentVelocity, rotationSpeed } = movement.current;
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
 
-    let moveX = 0;
-    let moveZ = 0;
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("keyup", handleKeyUp);
+      };
+    }, [isMoving, isJumping]);
 
-    if (keys.current.z) moveZ -= 1;
-    if (keys.current.s) moveZ += 1;
-    if (keys.current.q) moveX -= 1;
-    if (keys.current.d) moveX += 1;
+    useEffect(() => {
+      playAnimation(initialAnimation);
+    }, []);
 
-    if (moveX !== 0 && moveZ !== 0) {
-      const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
-      moveX /= length;
-      moveZ /= length;
-    }
+    useFrame((state, delta) => {
+      if (!group.current) return;
 
-    const targetVelocityX = moveX * speed;
-    const targetVelocityZ = moveZ * speed;
+      const character = group.current;
+      const { speed, acceleration, deceleration, currentVelocity, rotationSpeed,
+        gravity, floorHeight, isGrounded } = movement.current;
 
-    if (Math.abs(targetVelocityX - currentVelocity.x) > 0.01) {
-      currentVelocity.x += (targetVelocityX - currentVelocity.x) *
-        (targetVelocityX !== 0 ? acceleration : deceleration) * delta;
-    } else {
-      currentVelocity.x = targetVelocityX;
-    }
+      let moveX = 0;
+      let moveZ = 0;
 
-    if (Math.abs(targetVelocityZ - currentVelocity.z) > 0.01) {
-      currentVelocity.z += (targetVelocityZ - currentVelocity.z) *
-        (targetVelocityZ !== 0 ? acceleration : deceleration) * delta;
-    } else {
-      currentVelocity.z = targetVelocityZ;
-    }
+      if (keys.current.z) moveZ -= 1;
+      if (keys.current.s) moveZ += 1;
+      if (keys.current.q) moveX -= 1;
+      if (keys.current.d) moveX += 1;
 
-    character.position.x += currentVelocity.x * delta;
-    character.position.z += currentVelocity.z * delta;
+      if (moveX !== 0 && moveZ !== 0) {
+        const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+        moveX /= length;
+        moveZ /= length;
+      }
 
-    const movementMagnitude = Math.sqrt(
-      currentVelocity.x * currentVelocity.x + 
-      currentVelocity.z * currentVelocity.z
-    );
-    
-    if (movementMagnitude > 0.1) {
-      const targetRotationY = Math.atan2(currentVelocity.x, currentVelocity.z);
-      let angleDiff = targetRotationY - character.rotation.y;
+      const targetVelocityX = moveX * speed;
+      const targetVelocityZ = moveZ * speed;
 
-      if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      if (Math.abs(targetVelocityX - currentVelocity.x) > 0.01) {
+        currentVelocity.x += (targetVelocityX - currentVelocity.x) *
+          (targetVelocityX !== 0 ? acceleration : deceleration) * delta;
+      } else {
+        currentVelocity.x = targetVelocityX;
+      }
 
-      character.rotation.y += angleDiff * rotationSpeed * delta;
-    }
-  });
+      if (Math.abs(targetVelocityZ - currentVelocity.z) > 0.01) {
+        currentVelocity.z += (targetVelocityZ - currentVelocity.z) *
+          (targetVelocityZ !== 0 ? acceleration : deceleration) * delta;
+      } else {
+        currentVelocity.z = targetVelocityZ;
+      }
 
-  return (
-    <group ref={group} {...props} dispose={null}>
-      <group name="Scene">
-        <group name="fall_guys">
-          <primitive object={nodes._rootJoint} />
-          <skinnedMesh
-            name="body"
-            geometry={nodes.body.geometry}
-            material={materials.Material}
-            skeleton={nodes.body.skeleton}
-            castShadow
-            receiveShadow
-          />
-          <skinnedMesh
-            name="eye"
-            geometry={nodes.eye.geometry}
-            material={materials.Material}
-            skeleton={nodes.eye.skeleton}
-            castShadow
-            receiveShadow
-          />
-          <skinnedMesh
-            name="hand-"
-            geometry={nodes["hand-"].geometry}
-            material={materials.Material}
-            skeleton={nodes["hand-"].skeleton}
-            castShadow
-            receiveShadow
-          />
-          <skinnedMesh
-            name="leg"
-            geometry={nodes.leg.geometry}
-            material={materials.Material}
-            skeleton={nodes.leg.skeleton}
-            castShadow
-            receiveShadow
-          />
+      character.position.x += currentVelocity.x * delta;
+      character.position.z += currentVelocity.z * delta;
+
+      if (!movement.current.isGrounded) {
+        currentVelocity.y -= gravity * delta;
+        character.position.y += currentVelocity.y * delta;
+
+        if (character.position.y <= floorHeight) {
+          character.position.y = floorHeight;
+          currentVelocity.y = 0;
+          movement.current.isGrounded = true;
+          setIsJumping(false);
+          const anyKeyPressed = keys.current.z || keys.current.q || keys.current.s || keys.current.d;
+          playAnimation(anyKeyPressed ? "run" : "idle");
+          setIsMoving(anyKeyPressed);
+        }
+      }
+
+      const movementMagnitude = Math.sqrt(
+        currentVelocity.x * currentVelocity.x +
+        currentVelocity.z * currentVelocity.z
+      );
+
+      if (movementMagnitude > 0.1) {
+        const targetRotationY = Math.atan2(currentVelocity.x, currentVelocity.z);
+        let angleDiff = targetRotationY - character.rotation.y;
+
+        if (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        if (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+        character.rotation.y += angleDiff * rotationSpeed * delta;
+      }
+    });
+
+    return (
+      <group ref={group} {...props} dispose={null}>
+        <group name="Scene">
+          <group name="fall_guys">
+            <primitive object={nodes._rootJoint} />
+            <skinnedMesh
+              name="body"
+              geometry={nodes.body.geometry}
+              material={materials.Material}
+              skeleton={nodes.body.skeleton}
+              castShadow
+              receiveShadow
+            />
+            <skinnedMesh
+              name="eye"
+              geometry={nodes.eye.geometry}
+              material={materials.Material}
+              skeleton={nodes.eye.skeleton}
+              castShadow
+              receiveShadow
+            />
+            <skinnedMesh
+              name="hand-"
+              geometry={nodes["hand-"].geometry}
+              material={materials.Material}
+              skeleton={nodes["hand-"].skeleton}
+              castShadow
+              receiveShadow
+            />
+            <skinnedMesh
+              name="leg"
+              geometry={nodes.leg.geometry}
+              material={materials.Material}
+              skeleton={nodes.leg.skeleton}
+              castShadow
+              receiveShadow
+            />
+          </group>
         </group>
       </group>
-    </group>
-  );
-});
+    );
+  });
 
 useGLTF.preload("/models/character.glb");
