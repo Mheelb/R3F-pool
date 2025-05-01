@@ -2,19 +2,27 @@ import { Canvas } from '@react-three/fiber'
 import './App.css'
 import { OpenBox } from './components/geometrys/OpenBox'
 import { SpotLight } from './components/lights/SpotLight'
-import { Character } from './components/character/Character'
-import { CameraFollower } from './components/character/CameraFollower'
 import { Physics } from '@react-three/rapier'
-import { useRef } from 'react'
-import * as THREE from 'three'
+import { CharacterController } from './components/character/CharacterController'
+import { KeyboardControls } from '@react-three/drei'
+import { useState } from 'react'
+
+const keyboardMap = [
+  {name: "forward", keys: ["KeyW", "ArrowUp"]},
+  {name: "backward", keys: ["KeyS", "ArrowDown"]},
+  {name: "left", keys: ["KeyA", "ArrowLeft"]},
+  {name: "right", keys: ["KeyD", "ArrowRight"]},
+  {name: "run", keys: ["Shift"]},
+  {name: "jump", keys: ["Space"]},
+];
 
 const App = () => {
 
-  const characterRef = useRef<THREE.Group>(null);
+  const [map, setMap] = useState<string>("");
 
   return (
-    <Canvas>
-      <CameraFollower target={characterRef} offset={[0, 1, 3]} />
+    <KeyboardControls map={keyboardMap}>
+    <Canvas style={{touchAction: "none"}}>
       <ambientLight intensity={0.5} />
       <SpotLight
         position={[0, 5, 0]}
@@ -23,13 +31,8 @@ const App = () => {
         angle={1}
         penumbra={0.5}
       />
-      <Physics debug gravity={[0, -9.81, 0]}>
-        <Character
-          ref={characterRef}
-          scale={0.18}
-          position-y={-2.5}
-          animation={"idle"}
-        />
+      <Physics key={map}>
+        <CharacterController />
         <OpenBox
           floorColor="green"
           wallColor="blue"
@@ -38,8 +41,9 @@ const App = () => {
           rotation={[0, 0, 0]}
           size={[10, 5, 10]}
         />
-        </Physics>
+      </Physics>
     </Canvas>
+    </KeyboardControls>
   )
 }
 
