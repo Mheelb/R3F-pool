@@ -27,10 +27,10 @@ export const CharacterController = () => {
     const cameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
 
     const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, JUMP_SPEED } = {
-        WALK_SPEED: 0.8,
-        RUN_SPEED: 1.6,
+        WALK_SPEED: 20,
+        RUN_SPEED: 40,
         ROTATION_SPEED: degToRad(0.5),
-        JUMP_SPEED: 3,
+        JUMP_SPEED: 50,
     }
 
     const [, get] = useKeyboardControls();
@@ -127,8 +127,9 @@ export const CharacterController = () => {
             }
 
             setWasJumping(isJumpPressed);
-
             rb.current.setLinvel(vel, true);
+            console.log(rb.current.translation()); // Using translation() instead of position
+            
         }
 
         // CAMERA
@@ -156,23 +157,25 @@ export const CharacterController = () => {
             colliders={false}
             lockRotations
             ref={rb}
+            friction={0.5}
+            restitution={0.2}
+            linearDamping={0.5}
+            angularDamping={0.5}
             onCollisionEnter={({ other }) => {
-                if (other.rigidBodyObject?.name === "ground")
-                    setIsGrounded(true);
+                setIsGrounded(true);
             }}>
             <group ref={container}>
-                <group ref={cameraTarget} position-z={1.5} />
-                <group ref={cameraposition} position-z={-2} position-y={2} />
+                <group ref={cameraTarget} position-z={20} />
+                <group ref={cameraposition} position-z={-30} position-y={30} />
                 <group ref={character}>
                     <Character
-                        scale={0.18}
-                        position={[0, -0.25, 0]}
+                        scale={7}
+                        position={[0, -10, 0]}
                         animation={animation}
                     />
                 </group>
             </group>
-            <CapsuleCollider args={[0.08, 0.15]}  />
-
+            <CapsuleCollider args={[2, 7]} friction={0.5} restitution={0.2} />
         </RigidBody>
     )
 }
