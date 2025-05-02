@@ -13,7 +13,7 @@ export default function Statue(props: any) {
     });
 
     return (
-        <RigidBody colliders="hull" {...props} lockRotations>
+        <RigidBody type="fixed" colliders="hull" {...props} lockRotations>
             <primitive object={scene} castShadow receiveShadow/>
         </RigidBody>
     );

@@ -27,10 +27,10 @@ export const CharacterController = () => {
     const cameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
 
     const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, JUMP_SPEED } = {
-        WALK_SPEED: 20,
-        RUN_SPEED: 40,
+        WALK_SPEED: 3,
+        RUN_SPEED: 6,
         ROTATION_SPEED: degToRad(0.5),
-        JUMP_SPEED: 50,
+        JUMP_SPEED: 5,
     }
 
     const [, get] = useKeyboardControls();
@@ -165,17 +165,17 @@ export const CharacterController = () => {
                 setIsGrounded(true);
             }}>
             <group ref={container}>
-                <group ref={cameraTarget} position-z={20} />
-                <group ref={cameraposition} position-z={-30} position-y={30} />
+                <group ref={cameraTarget} position-z={10} />
+                <group ref={cameraposition} position-z={-10} position-y={10} />
                 <group ref={character}>
                     <Character
-                        scale={7}
-                        position={[0, -10, 0]}
+                        scale={2}
+                        position={[0, -1, 0]}
                         animation={animation}
                     />
                 </group>
             </group>
-            <CapsuleCollider args={[2, 7]} friction={0.5} restitution={0.2} />
+            <CapsuleCollider args={[1.5, 1.7]} friction={0.5} restitution={0.2} position={[0, 1, 0]}/>
         </RigidBody>
     )
 }

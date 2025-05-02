@@ -37,16 +37,11 @@ const App = () => {
       /> */}
       <Physics 
         key={map} 
-        gravity={[0, -60.82, 0]}
-        defaultContactMaterial={{
-          friction: 0.5,
-          restitution: 0.2,
-          contactForceThreshold: 0.1
-        }}
+        colliders="cuboid"
       >
-        <Statue receiveShadow castShadow position={[29, -2.4, -363]} rotation={[0, 0, 0]} scale={20}/>
+        <Statue receiveShadow castShadow position={[4, 0, -37]} rotation={[0, 0, 0]} scale={3}/>
         <CharacterController />
-        <Museum position={[100, -10, 0]} receiveShadow/>
+        <Museum position={[10, 0, 0]} receiveShadow scale={0.1}/>
         {/* <OpenBox
           floorColor="green"
           wallColor="blue"
