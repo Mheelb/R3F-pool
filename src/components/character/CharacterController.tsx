@@ -1,6 +1,6 @@
 import { RigidBody, CapsuleCollider, RapierRigidBody } from "@react-three/rapier"
 import { Character } from "./Character"
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
@@ -8,7 +8,7 @@ import { useKeyboardControls } from "@react-three/drei";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { lerpAngle } from "../../utils/Math";
 
-export const CharacterController = () => {
+export const CharacterController = forwardRef((props: any, ref) => {
 
     const isClicking = useRef<boolean>(false);
     const [wasJumping, setWasJumping] = useState(false);
@@ -61,44 +61,39 @@ export const CharacterController = () => {
     }, []);
 
     useFrame(({ camera, mouse }) => {
-
         if (rb.current) {
             const vel = rb.current.linvel();
-            const movement = {
-                x: 0,
-                z: 0
-            }
+            let moveForward = 0;
+            let moveRight = 0;
 
-            if (get().forward)
-                movement.z = 1;
+            if (get().forward) moveForward += 1;
+            if (get().backward) moveForward -= 1;
+            if (get().right) moveRight += 1;
+            if (get().left) moveRight -= 1;
 
-            if (get().backward)
-                movement.z = -1;
+            // Direction de la caméra projetée sur le sol
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection);
+            cameraDirection.y = 0;
+            cameraDirection.normalize();
+
+            // Vecteur droite par produit vectoriel
+            const cameraRight = new THREE.Vector3();
+            cameraRight.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0)).normalize();
+
+            // Calcul du mouvement
+            const moveDir = new THREE.Vector3();
+            moveDir.addScaledVector(cameraDirection, moveForward);
+            moveDir.addScaledVector(cameraRight, moveRight);
+            if (moveDir.length() > 0) moveDir.normalize();
 
             let speed = get().run ? RUN_SPEED : WALK_SPEED;
+            vel.x = moveDir.x * speed;
+            vel.z = moveDir.z * speed;
 
-            if (isClicking.current) {
-                if (Math.abs(mouse.x) > 0.1)
-                    movement.x = -mouse.x;
-                movement.z = mouse.y + 0.4;
-                if (Math.abs(movement.x) > 0.5 || Math.abs(movement.z) > 0.5)
-                    speed = RUN_SPEED;
-
-            }
-
-            if (get().left)
-                movement.x = 1;
-
-            if (get().right)
-                movement.x = -1;
-
-            if (movement.x !== 0)
-                rotationTarget.current += movement.x * ROTATION_SPEED;
-
-            if (movement.x !== 0 || movement.z !== 0) {
-                characterRotationTarget.current = Math.atan2(movement.x, movement.z);
-                vel.z = Math.cos(rotationTarget.current + characterRotationTarget.current) * speed;
-                vel.x = Math.sin(rotationTarget.current + characterRotationTarget.current) * speed;
+            // Animation et rotation du personnage
+            if (moveDir.length() > 0) {
+                characterRotationTarget.current = Math.atan2(moveDir.x, moveDir.z);
                 if (speed === RUN_SPEED && isGrounded)
                     setAnimation("run");
                 else if (isGrounded)
@@ -116,41 +111,27 @@ export const CharacterController = () => {
             }
 
             // JUMP
-
             const isJumpPressed = get().jump;
-
             if (isJumpPressed && isGrounded && !wasJumping) {
                 vel.y = JUMP_SPEED;
                 setWasJumping(true);
                 setIsGrounded(false);
                 setAnimation("jump_air");
             }
-
             setWasJumping(isJumpPressed);
             rb.current.setLinvel(vel, true);
-            console.log(rb.current.translation()); // Using translation() instead of position
-            
-        }
-
-        // CAMERA
-
-        if (container.current) {
-            container.current.rotation.y = THREE.MathUtils.lerp(
-                container.current.rotation.y,
-                rotationTarget.current,
-                0.1
-            );
-        }
-        cameraposition.current?.getWorldPosition(cameraWorldPosition.current);
-        camera.position.lerp(cameraWorldPosition.current, 0.1);
-
-        if (cameraTarget.current) {
-            cameraTarget.current.getWorldPosition(cameraLookAtWorldPosition.current);
-            cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
-
-            camera.lookAt(cameraLookAt.current);
         }
     });
+
+    useImperativeHandle(ref, () => ({
+        getPosition: () => {
+            if (rb.current) {
+                const pos = rb.current.translation();
+                return [pos.x, pos.y, pos.z];
+            }
+            return [0, 0, 0];
+        }
+    }));
 
     return (
         <RigidBody
@@ -178,4 +159,4 @@ export const CharacterController = () => {
             <CapsuleCollider args={[1.5, 1.7]} friction={0.5} restitution={0.2} position={[0, 1, 0]}/>
         </RigidBody>
     )
-}
+});
