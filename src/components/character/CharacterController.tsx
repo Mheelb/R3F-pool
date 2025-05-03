@@ -27,10 +27,10 @@ export const CharacterController = () => {
     const cameraLookAt = useRef<THREE.Vector3>(new THREE.Vector3());
 
     const { WALK_SPEED, RUN_SPEED, ROTATION_SPEED, JUMP_SPEED } = {
-        WALK_SPEED: 3,
-        RUN_SPEED: 6,
+        WALK_SPEED: 6,
+        RUN_SPEED: 12,
         ROTATION_SPEED: degToRad(0.5),
-        JUMP_SPEED: 5,
+        JUMP_SPEED: 15,
     }
 
     const [, get] = useKeyboardControls();
@@ -166,11 +166,11 @@ export const CharacterController = () => {
             }}>
             <group ref={container}>
                 <group ref={cameraTarget} position-z={10} />
-                <group ref={cameraposition} position-z={-10} position-y={10} />
+                <group ref={cameraposition} position-z={-15} position-y={10} />
                 <group ref={character}>
                     <Character
                         scale={2}
-                        position={[0, -1, 0]}
+                        position={[0, -2.1, 0]}
                         animation={animation}
                     />
                 </group>

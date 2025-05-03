@@ -9,6 +9,7 @@ export default function Statue(props: any) {
         if ((node as THREE.Mesh).isMesh) {
             (node as THREE.Mesh).castShadow = true;
             (node as THREE.Mesh).receiveShadow = true;
+            (node as THREE.Mesh).material = new THREE.MeshStandardMaterial({ color: 0xffffff });
         }
     });
 
